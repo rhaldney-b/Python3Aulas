@@ -13,13 +13,13 @@ class Contact:
         self._email = email
 
     def __str__(self):
-        return f'Name: {self.name}\nPhone: {self.phone}\nEmail: {self.email}'
+        return f'Name: {self.name}\nPhone: {self._phone}\nEmail: {self._email}'
 
     def to_dict(self):
         return {
             'name': self.name,
-            'phone': self.phone,
-            'email': self.email,
+            'phone': self._phone,
+            'email': self._email,
         }
 
     @property
@@ -37,26 +37,52 @@ class Contact:
         return self._phone
 
     @phone.setter
-    def phone(self, value):
-        if not isinstance(value, int):
-            raise TypeError('phone must be a int')
+    def phone(self, value): 
         self._phone = value
 
 
 def contact_details():
     name = input('Name: ').capitalize()
-    phone = input('Phone: ')
-    email = input('Email: ')
+    phone = format_phone()
+    email = validate_email()
     return Contact(name, phone, email)
 
 def format_phone():
     phone = input('Phone: ')
     if phone.isdigit() is False:
-        raise ValueError
+        raise ValueError    
     len_phone = len(phone)
-    if len_phone == '9' or len_phone == '11':
-        
-    
+    if len_phone == 9:
+        formatted = f'{phone[:5]}-{phone[5:]}'
+        return formatted
+    if len_phone == 11:
+        formatted = f'({phone[0:2]}){phone[2:7]}-{phone[7:11]}'
+        return formatted
+
+def validate_email():
+    email = input('Email: ').strip()
+
+    if not '@' in email:
+        raise ValueError
+    if email.count('@') != 1:
+        raise ValueError
+    if '..' in email:
+        raise ValueError
+    atsignpostion = email.index('@')
+    domain = email.split('@')[1]
+    if not '.' in domain:
+        raise ValueError
+    pointposition = domain.index('.')
+    if not email[:atsignpostion]:
+        raise ValueError
+    if not email[atsignpostion + 1:]:
+        raise ValueError
+    if not email[:pointposition]:
+        raise ValueError
+    if not domain[pointposition + 1:]:
+        raise ValueError
+
+    return email
 
 def write_json(contacts):
     list_contacts = []
@@ -125,16 +151,19 @@ def delete_contact():
 
 def export_csv():
     contacts = read_json()
-    with open(CSV_PATH, 'w', encoding='utf8') as f:
-        columns = contacts[0].to_dict().keys()
-        writer = csv.DictWriter(
-            f,
-            fieldnames=columns
-        )
-        writer.writeheader()
+    try:
+        with open(CSV_PATH, 'w', encoding='utf8') as f:
+            columns = contacts[0].to_dict().keys()
+            writer = csv.DictWriter(
+                f,
+                fieldnames=columns
+            )
+            writer.writeheader()
 
-        for contact in contacts:
-            writer.writerow(contact.to_dict())
+            for contact in contacts:
+                writer.writerow(contact.to_dict())
+    except IndexError as error:
+        print(f'error: {error}')
 
 def import_csv():
     with open(CSV_PATH, 'r', encoding='utf8') as f:
@@ -142,7 +171,6 @@ def import_csv():
         date = list(reader)
         contacts = [Contact(**contact) for contact in date]
         write_json(contacts)
-
 
 
 
